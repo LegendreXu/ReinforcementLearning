@@ -17,8 +17,8 @@ class Bandit():
     # @UCB_param: if not None, use UCB algorithm to select action
     # @gradient: if True, use gradient based bandit algorithm
     # @gradient_baseline: if True, use average reward as baseline for gradient based bandit algorithm
-    def __init__(self, stock_data, epsilon=0., initial=0., step_size=0.1, sample_averages=False, UCB_param=None,
-                 gradient=False, gradient_baseline=False):
+    def __init__(self, stock_data, epsilon=0., step_size=0.1, sample_averages=False, UCB_param=None,
+                 gradient=False, gradient_baseline=False, America=False):
         self.k_arm = len(stock_data)
         self.step_size = step_size
         self.sample_averages = sample_averages
@@ -30,25 +30,34 @@ class Bandit():
         self.average_reward = 0
         self.data = stock_data
         self.epsilon = epsilon
-        self.initial = initial
-        self.q_estimation = np.zeros(self.k_arm) + self.initial
         self.action_count = np.zeros(self.k_arm)
+        self.initial = np.zeros(self.k_arm)
+        self.q_estimation = np.zeros(self.k_arm)
         self.time = 0
     
     ## process the stock data, generate the daily return    
-    def generate_stock_ret(self):
+    def generate_stock_ret(self, America):
         res = []
         for item in self.data.keys():
-            sample = self.data[item].Close
+            sample = self.data[item].close
             temp = sample.apply(np.log).diff()[1:]
             temp = temp.to_frame()
             temp.columns = [item]
             res.append(temp)
 
         self.df = pd.concat(res, axis=1)
+        if America:
+            self.df = self.df[self.df.index>'2016-01-01']
+         
         self.df.fillna(0, inplace=True)
+    
+    ## setting initial value, q_estimation
+    def initialization(self):
+        history = np.mean(self.df[:120], axis=0)
+        self.df = self.df[120:]
+        self.q_estimation = history.values
+        self.time = 0
         
-
     # get an action for this bandit
     def act(self):
         if np.random.rand() < self.epsilon:
@@ -95,9 +104,10 @@ class Bandit():
             self.q_estimation[action] += self.step_size * (reward - self.q_estimation[action])
         return reward, self.q_estimation, optimal_action
 
-def multi_armed_bandit(stock_data, epsilon=0.1, initial=0., step_size=0.1, sample_averages=False, UCB_param=None, gradient=False, gradient_baseline=False):
-    bandit = Bandit(stock_data, epsilon, initial, step_size, sample_averages, UCB_param, gradient, gradient_baseline)
-    bandit.generate_stock_ret()
+def multi_armed_bandit(stock_data, epsilon=0.1, step_size=0.1, sample_averages=False, UCB_param=None, gradient=False, gradient_baseline=False, America=False):
+    bandit = Bandit(stock_data, epsilon, step_size, sample_averages, UCB_param, gradient, gradient_baseline, America)
+    bandit.generate_stock_ret(America)
+    bandit.initialization()
     n_steps = len(bandit.df) 
     qs = np.zeros((n_steps, bandit.k_arm))
     rewards = np.zeros(n_steps)
@@ -145,13 +155,9 @@ def show_result(df, result):
     ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_space))
     plt.grid()
     plt.show()
+    
+    return net_value
 
-import pickle
-with open('EU_data.pickle', 'rb') as handle:
-    data = pickle.load(handle)
-
-result, df0 = multi_armed_bandit(data, epsilon=0.1, initial=0., step_size=0.1, sample_averages=True, UCB_param=None, gradient=False, gradient_baseline=False)    
-show_result(df0,result)
 
 
 
