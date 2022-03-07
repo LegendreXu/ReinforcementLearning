@@ -13,7 +13,7 @@ lis = ['MSFT', 'AAPL', 'AMZN', 'FB', 'GOOG', 'JNJ',
             'MDT', 'ABBV', 'PYPL', 'AMGN', 'TMO', 'LLY', 'HON', 'ACN', 'IBM']
 
 for item in lis:
-    data = pdr.get_data_alphavantage("NVDA", api_key='EnTeRYoUrApIKeYhErE')
+    data = pdr.get_data_alphavantage(item, api_key='EnTeRYoUrApIKeYhErE')
     res[item] = data
     time.sleep(15)
 
