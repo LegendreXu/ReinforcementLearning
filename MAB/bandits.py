@@ -1,10 +1,20 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Mar  6 21:40:50 2022
 
-@author: 13732
-"""
 
+#######################################################################
+# Copyright (C)                                                       #
+# 2016-2018 Shangtong Zhang(zhangshangtong.cpp@gmail.com)             #
+# 2016 Tian Jun(tianjun.cpp@gmail.com)                                #
+# 2016 Artem Oboturov(oboturov@gmail.com)                             #
+# 2016 Kenta Shimada(hyperkentakun@gmail.com)                         #
+# Permission given to modify the code as long as you keep this        #
+# declaration at the top                                              #
+#######################################################################
+
+'''
+Class Bandit is modified based on the code given by the textbook.
+We modify the class so that it can be applied into the stock selection problems
+
+'''
 import pandas as pd
 import numpy as np
 
@@ -104,7 +114,11 @@ class Bandit():
             self.q_estimation[action] += self.step_size * (reward - self.q_estimation[action])
         return reward, self.q_estimation, optimal_action
 
+##define function so that we generate the bandit results###
+## If America is True, we are dealing with the US dataset###
+    
 def multi_armed_bandit(stock_data, epsilon=0.1, step_size=0.1, sample_averages=False, UCB_param=None, gradient=False, gradient_baseline=False, America=False):
+    
     bandit = Bandit(stock_data, epsilon, step_size, sample_averages, UCB_param, gradient, gradient_baseline, America)
     bandit.generate_stock_ret(America)
     bandit.initialization()
@@ -155,9 +169,33 @@ def show_result(df, result):
     ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_space))
     plt.grid()
     plt.show()
+
+def get_result(df, result):
+    df0 = df.copy()
+    ret_lis = []
+    for i in range(len(df0)):
+        num = int(result['actions'][i])
+        ret_lis.append(df0.iloc[i,num])
+    
+    ret_df = pd.DataFrame(ret_lis, index=df0.index)
+    net_value = ret_df.cumsum().apply(np.exp)
     
     return net_value
 
-
+def get_performance(net_value):
+    ret = np.log(net_value).diff().dropna()
+    annual_ret = ret.mean().values[0]*252
+    annual_vol = ret.std().values[0]*np.sqrt(252)
+    sharpe = annual_ret/annual_vol
+    s=(ret+1).cumprod()
+    mdd_pct = (1-np.ptp(s)/s.max()).values[0]
+    mdd_usd = (net_value.cummax()-net_value).max()
+    mdd_usd = mdd_usd.values[0]
+    r_d = ret[ret<0].dropna()
+    down_deviation = np.sqrt(252)*(np.sqrt((0 - r_d)**2).sum())/r_d.shape[0]
+    down_deviation = down_deviation.values[0]
+    sortino = annual_ret/ down_deviation
+    return pd.DataFrame({'Aunnualized Return': [annual_ret], 'Annualized Volatility': [annual_vol], 'Downside Deviation': [down_deviation], 'Max Drawdown(in percentage)': [mdd_pct], 'Max Drawdown(in dollars)': [mdd_usd], 'Sharpe Ratio': [sharpe], 'Sortino Ratio': [sortino]})
+    
 
 
