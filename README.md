@@ -5,7 +5,7 @@ Instructor: Prof. Chak WONG
 
 Group Members: XU Guosong & CHEN Zuozhi
 
-Contact: gxuae@connect.ust.hk
+Contact: gxuae@connect.ust.hk, zchenfu@connect.ust.hk
 
 Aim: Apply Reinforcement Learning in the financial areas (e-trading/hedging/investment…)
 
