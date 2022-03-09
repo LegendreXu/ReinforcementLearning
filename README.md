@@ -3,7 +3,7 @@
 
 Instructor: Prof. Chak WONG
 
-Group Members: XU Guosong & CHEN Zhuozhi
+Group Members: XU Guosong & CHEN Zuozhi
 
 Contact: gxuae@connect.ust.hk
 
