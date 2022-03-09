@@ -127,6 +127,8 @@ def EW(data, America=False):
     net_value = pd.DataFrame([0]*data_last.shape[0], index=data_last.index, columns=['net_value'])
     for i in range(data_last.shape[0]):
         net_value.iloc[i] = data_last.iloc[i].mean()
+    
+    net_value /= net_value.iloc[0]
 
     ret = np.log(net_value).diff().dropna()
     annual_ret = ret.mean().values[0]*252
