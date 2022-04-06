@@ -12,13 +12,13 @@ from tqdm import trange
 
 class hedging_strategy():
     
-    def __init__(self, period, ALPHA=0.5, GAMMA=1):
+    def __init__(self, period, ALPHA=0.5, GAMMA=1, epsilon = 0.1):
         self.ALPHA = ALPHA # step size of Q-learning
         self.GAMMA = GAMMA # discount rate of Q-learning
         self.Actions = [0, 0.5, 1] # possible actions: 0: short 0 stocks, 0.5: short 0.5 stocks, 1: short 1 stocks
-        
+        self.epsilon = epsilon
         self.up = 1.1 # the upside ratio of stock movement in binominal model
-        self.down = - 1/self.up # the downside ratio of stock movement in binominal model
+        self.down = 0.9 # the downside ratio of stock movement in binominal model
         self.period = period
         self.start_price = self.period-1 ## we use a np.array(2*T-1) to store the corresponding price, so the start price should be the T-1 element in the array
         
@@ -45,7 +45,13 @@ class hedging_strategy():
         elif movement == 0:
             next_price = state[0] - 1
         
-        St = float(np.where(state[0]>self.start_price, self.up**(state[0]-self.start_price), self.down**(-state[0]+self.start_price))) # stock price at time t
+        if state[0] - self.start_price > 0:
+            up_times = state[0] - self.start_price + (state[1] - (state[0] - self.start_price))/2
+        else:
+            up_times = (state[1] + (state[0] - self.start_price))/2
+        down_times = state[1] - up_times
+        
+        St = self.up**up_times * self.down**down_times # stock price at time t
         St_1 = float(np.where(next_price>state[0], St*self.up, St*self.down)) # stock price at time t+1
         
                    
@@ -105,9 +111,10 @@ class hedging_strategy():
         T = self.period
         q_value = np.zeros((2*T-1, T , 3))  
         reward_record = []
+        epsilon = self.epsilon
         for j in trange(episodes):
-            x = (episodes-1) * (1 - 0.1) / episodes
-            epsilon = x/(x+j)
+            if j %1000 == 0:
+                epsilon *= self.epsilon
             q_value, rewards = self.q_learning(q_value, epsilon)  
             reward_record.append(rewards)
         self.q_value = q_value
@@ -129,14 +136,15 @@ class hedging_strategy():
         rewards_1 = []
         rewards_random = []
         
-        reward_optimal, reward_0, reward_half, reward_1, reward_random = 0, 0, 0, 0, 0
         
-        for i in range(runs):
+        
+        for i in trange(runs):
             
             price = self.period-1
             t = 0
             state = [price,t]
             
+            reward_optimal, reward_0, reward_half, reward_1, reward_random = 0, 0, 0, 0, 0
             
             while state[1] < self.period:
                 movement = np.random.binomial(1, 0.5)
@@ -145,8 +153,14 @@ class hedging_strategy():
                     next_price = state[0] + 1
                 elif movement == 0:
                     next_price = state[0] - 1
+                    
+                if state[0] - self.start_price > 0:
+                    up_times = state[0] - self.start_price + (state[1] - (state[0] - self.start_price))/2
+                else:
+                    up_times = (state[1] + (state[0] - self.start_price))/2
+                down_times = state[1] - up_times
                 
-                St = float(np.where(state[0]>self.start_price, self.up**(state[0]-self.start_price), self.down**(-state[0]+self.start_price))) # stock price at time t
+                St = self.up**up_times * self.down**down_times # stock price at time t
                 St_1 = float(np.where(next_price>state[0], St*self.up, St*self.down)) # stock price at time t+1
                 
                 optimal_action =  np.argmax(self.q_value[state[0], state[1], :])
@@ -160,25 +174,35 @@ class hedging_strategy():
                 next_state = [next_price, t]
                 state = next_state
              
-            rewards_optimal.append(reward_optimal/(i+1))
-            rewards_0.append(reward_0/(i+1))
-            rewards_half.append(reward_half/(i+1))
-            rewards_1.append(reward_1/(i+1))
-            rewards_random.append(reward_random/(i+1))
-        plt.plot(np.array(rewards_optimal), label = 'optimal policy')
-        plt.plot(np.array(rewards_0), label = 'always 0')
-        plt.plot(np.array(rewards_half), label = 'always 0.5')
-        plt.plot(np.array(rewards_1), '--',linewidth = 0.5, label = 'always 1')
-        plt.plot(np.array(rewards_random), label = 'random policy')
+            rewards_optimal.append(reward_optimal)
+            rewards_0.append(reward_0)
+            rewards_half.append(reward_half)
+            rewards_1.append(reward_1)
+            rewards_random.append(reward_random)
+        
+        rewards_optimal = np.array(rewards_optimal)
+        rewards_0 = np.array(rewards_0)
+        rewards_half = np.array(rewards_half)
+        rewards_1 = np.array(rewards_1)
+        rewards_random = np.array(rewards_random)
+        
+        plt.plot(rewards_optimal.cumsum()/np.arange(1,runs+1), label = 'optimal policy')
+        plt.plot(rewards_0.cumsum()/np.arange(1,runs+1), label = 'always 0')
+        plt.plot(rewards_half.cumsum()/np.arange(1,runs+1), label = 'always 0.5')
+        plt.plot(rewards_1.cumsum()/np.arange(1,runs+1), '--',linewidth = 0.5, label = 'always 1')
+        plt.plot(rewards_random.cumsum()/np.arange(1,runs+1), label = 'random policy')
         plt.title('policy rewards against sampling sizes')
         plt.xlabel('runs')
         plt.ylabel('average rewards')
         plt.legend(loc = 'lower right')
+        
+        
     
 if __name__ == '__main__':
-    solver = hedging_strategy(1)
+    solver = hedging_strategy(10)
     solver.train()
     solver.print_optimal_policy()
     q_value = solver.get_q_value()
-    #solver.plot_training()
-    solver.compare_results(100000) 
+    solver.plot_training()
+    #solver.compare_results(5000) 
+    
