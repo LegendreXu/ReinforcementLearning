@@ -34,3 +34,5 @@ Assignments
 #### Other References
 
 -   Slides of MAFS6010Y at HKUST [Slides]
+-   Jay Cao, J. Chen, John C. Hull, and Zissis Poulos. Deep hedging of derivatives using reinforcement
+learning. Risk Management & Analysis in Financial Institutions eJournal, 2019.
