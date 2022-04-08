@@ -13,7 +13,7 @@ Assignments
 
 -   [x] Can we use the bandit algorithm to choose which stocks to investment？  (30pts) with HARD DDL on March 11.
     
--   [ ] In a binomial model of a single stock, suppose we can have only three possible actions, short 0, 0.5, 1.0 stocks, use Q-learning to train the optimal policy of hedging the stock. (30pts) with HARD DDL on April 15.
+-   [x] In a binomial model of a single stock, suppose we can have only three possible actions, short 0, 0.5, 1.0 stocks, use Q-learning to train the optimal policy of hedging the stock. (30pts) with HARD DDL on April 15.
     
 -   [ ] In a binomial model of a single stock, assume that we can hedge any fraction of a stock, use policy gradient to train the optimal policy of hedging an ATM European call option. Compare this to the delta hedging method under a binomial model. (40pts) with HARD DDL on May 13.
     
